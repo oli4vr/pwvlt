@@ -7,9 +7,9 @@
  * 
  * */
 
-#define PAYLOAD_SIZE 8128
-#define MESSAGE_SIZE 8126
-#define BUFFER_SIZE 8192
+#define PAYLOAD_SIZE 960
+#define MESSAGE_SIZE 958
+#define BUFFER_SIZE 1024
 
 #define RNDBUFF 65536
 
