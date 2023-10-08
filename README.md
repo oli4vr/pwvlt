@@ -64,16 +64,18 @@ Payload 1st :
 Payload 2nd :
 </pre>
 
-<p>Erase entry</p>
+<p>Erase entry. Important note : To keep the vault intact, erase only wipes an entry with random data. It does not free any blocks of data. The size of a vault can only grow and never shrink. This is due to the nature of the concept. (You don't know what other entries are in the vault)</p>
 <pre>$ pwvlt -e MySecretPassword
 Enter vault password for MySecretPassword :
 </pre>
 
-<p>Command strings : Last but not least you can store short command scripts and execute the vaulted string content as command(s).</p>
+<p>Run as command : Last but not least you can store short command scripts and execute the vaulted string content as command(s). This is practical if you need to put commands in scripts that have sensitive strings or passwords in plain text. This will hide those strings or commands from the script.</p>
 <pre>$ echo date | pwvlt -a -p MySecretPassword MySecretCommand
 $ pwvlt -c -p MySecretPassword MySecretCommand
 zo 08 okt 2023 10:54:51 CEST
 </pre>
+
+<p>All encrypted vaults are stored in ${HOME}/.entropy</p>
 
 <p>By default stdin is used as the source for the payload/content unless -q is provided</p>
 <p>You can use mixed complexities of encryption with the -% parameter you can choose a customer nr of encryption rounds.
