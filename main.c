@@ -227,7 +227,7 @@ int main(int argc, char **argv)
         buffer[0]=0;
         entropy_erase(buffer,keystring,password,filepath,rounds,offset);
        } else {
-        fprintf(stderr," Error : Keystring entry not found!");
+        fprintf(stderr," Error : Keystring entry not found!\n");
         return -5;
        }
      break;

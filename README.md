@@ -5,22 +5,20 @@
 
 <p>There is also no index or any method to list or know what entries are present in the file. The idea is that person A could store an entry after person B and be completely unaware that person A has any data in the vault and vise versa.</p>
 
-<p><u><b>"Entropy" on wikipedia :</b></u></p>
-<blockquote>"Entropy is a scientific concept, as well as a measurable physical property, that is most commonly associated with a state of disorder, randomness, or uncertainty."</blockquote>
 <br />
 <h3><b>Command syntax :</b></h3>
-<pre>entrovault -> Entropy vault
+<pre>pwvlt -> Password & String Vault
  by Olivier Van Rompuy
 
-Search Entry  : entrovault [-s] [-c] [-p vault_password] [-v vault_name] [-% rounds] keystring
-Append Entry  : entrovault -a [-q] [-p vault_password] [-v vault_name] [-% rounds] keystring
-Replace Entry : entrovault -r [-q] [-p vault_password] [-v vault_name] [-% rounds] keystring
-Erase Entry   : entrovault -e [-q] [-p vault_password] [-v vault_name] [-% rounds] keystring
-List Vaults   : entrovault -l
+Search Entry  : pwvlt [-s] [-c] [-p vault_password] [-v vault_name] [-% rounds] keystring
+Append Entry  : pwvlt -a [-q] [-p vault_password] [-v vault_name] [-% rounds] keystring
+Replace Entry : pwvlt -r [-q] [-p vault_password] [-v vault_name] [-% rounds] keystring
+Erase Entry   : pwvlt -e [-q] [-p vault_password] [-v vault_name] [-% rounds] keystring
+List Vaults   : pwvlt -l
 
 Options
- -s     Output string in plain text instead of invisible.
- -a     Append entry
+ -s 		Output string in plain text instead of invisible.
+ -a		Append entry
  -r		Replace entry. If not found append
  -e		Erase entry
  -p		Vault password
@@ -29,38 +27,46 @@ Options
  -%		Encryption rounds
  -l		List vaults
  -c		Execute content as system commands
+
  </pre>
 
 <h3><b>Explain by example :</b></h3>
 <p><b>Store a password in the vault and retrieve it</b><br/>
-You are always required to enter a vault password. This password can be unique per entry, but does not have to be.
-This is purely up to the user and the use case. When you append a new entry you are required to confirm the password a second time.
+You are always required to secure it with a vault password. The password can be provided on the command line with -p or via a password style entry (default). This password can be unique per entry, but does not have to be. This is purely up to the user and the use case.
 <br/>The -q option allows you to enter the payload via a password style input prompt.
 </p>
-<pre>$ entrovault -q -a MySecretPassword
-Enter vault password for MySecretPassword - 1st : 
-Enter vault password for MySecretPassword - 2nd : 
+<pre>$ pwvlt -q -a -p MyVaultPassword MySecretPassword
 Payload 1st : 
-Payload 2nd :
+Payload 2nd : 
+
+-> In this example "MySecretPassword" is the keystring (or entry name)
 </pre>
-<p>Retrieve your password</p>
-<pre>$ entrovault -s MySecretPassword
-Enter vault password for MySecretPassword :
-PASSW0RD
+
+
+<p>You can also append a string or password to a vault from stdin (remove -q)</p>
+<pre>printf "MyPassword" | pwvlt -a -p MyVaultPassword MySecretPassword
+</pre>
+
+<p>Retrieve your password as an invisible copy/paste-able string. As an example this could be practical to use in interactive login scripts.</p>
+<pre>$ pwvlt -p MyVaultPassword MySecretPassword
+Copy/Paste between >>>      <<<
+</pre>
+
+<p>You can also retrieve the password or string and print it to stdout with "-s". This can also be practical in scripts.</p>
+<pre>$ pwvlt -s -p MyVaultPassword MySecretPassword
+MyPassword
 </pre>
 
 <p>Replace entry</p>
-<pre>$ entrovault -q -r MySecretPassword
+<pre>$ pwvlt -q -r MySecretPassword
 Enter vault password for MySecretPassword :
 Payload 1st :
 Payload 2nd :
 </pre>
 
 <p>Erase entry</p>
-<pre>$ entrovault -e MySecretPassword
+<pre>$ pwvlt -e MySecretPassword
 Enter vault password for MySecretPassword :
-Payload 1st :
-Payload 2nd :
 </pre>
 
 <p>By default stdin is used as the source for the payload/content unless -q is provided</p>
@@ -70,8 +76,8 @@ You can go up to 255, but beware that as the vault file grows it will require ex
 <p>
 
 <h3><b>Build & Install</b></h3>
-<pre>$ git clone https://github.com/oli4vr/entrovault.git
-$ cd entrovault
+<pre>$ git clone https://github.com/oli4vr/pwvlt.git
+$ cd pwvlt
 $ make
 $ make install
 </pre>
@@ -79,11 +85,11 @@ $ make install
 <br />
 <h3><b>More example use cases :</b></h3>
 <p><b>Interactive authentication script :</b></p>
-<pre>some_application -username=myuser -password=$(entrovault MySecretPassword) ...do some stuff</pre>
+<pre>some_application -username=myuser -password=$(pwvlt MySecretPassword) ...do some stuff</pre>
 <p>* The point here is that you only need to remember the vault password</p><br />
 <p><b>Use case for -c : Store and execute sensitive commands</b></p>
-<pre>$ echo "some_application -username=myuser -password=XYZABC ..." | entrovault -a mycommand
-$ entrovault -c mycommand</pre><br />
+<pre>$ echo "some_application -username=myuser -password=XYZABC ..." | pwvlt -a mycommand
+$ pwvlt -c mycommand</pre><br />
 <p><b>Safely store (expect) login scripts with hard coded passwords</b><br />
 Example Login script with nested jump to a third host :</p>
 <pre># vi autologin.sh
@@ -102,5 +108,5 @@ open /dev/tty
 interact
 EOF</pre>
 <p>Store it in a vault and execute it :</p>
-<pre>$ entrovault -v sshvault -a ssh/autologin &lt; autologin.sh
-$ entrovault -v sshvault -c ssh/autologin</pre>
+<pre>$ pwvlt -v sshvault -a ssh/autologin &lt; autologin.sh
+$ pwvlt -v sshvault -c ssh/autologin</pre>
