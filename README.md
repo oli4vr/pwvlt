@@ -76,6 +76,7 @@ zo 08 okt 2023 10:54:51 CEST
 </pre>
 
 <p>All encrypted vaults are stored in ${HOME}/.entropy</p>
+<p>Strings can be a maximum of 955 bytes in size.</p>
 
 <p>By default stdin is used as the source for the payload/content unless -q is provided</p>
 <p>You can use mixed complexities of encryption with the -% parameter you can choose a customer nr of encryption rounds.
