@@ -47,7 +47,7 @@ Payload 2nd :
 <pre>printf "MyPassword" | pwvlt -a -p MyVaultPassword MySecretPassword
 </pre>
 
-<p>Retrieve your password as an invisible copy/paste-able string. As an example this could be practical to use in interactive login scripts.</p>
+<p>Retrieve your password as an invisible copy/paste-able string. As an example, this could be practical for use in interactive login scripts.</p>
 <pre>$ pwvlt -p MyVaultPassword MySecretPassword
 Copy/Paste between >>>      <<<
 </pre>
@@ -67,6 +67,12 @@ Payload 2nd :
 <p>Erase entry</p>
 <pre>$ pwvlt -e MySecretPassword
 Enter vault password for MySecretPassword :
+</pre>
+
+<p>Command strings : Last but not least you can store short command scripts and execute the vaulted string content as command(s).</p>
+<pre>$ echo date | pwvlt -a -p MySecretPassword MySecretCommand
+$ pwvlt -c -p MySecretPassword MySecretCommand
+zo 08 okt 2023 10:54:51 CEST
 </pre>
 
 <p>By default stdin is used as the source for the payload/content unless -q is provided</p>
