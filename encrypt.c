@@ -1,6 +1,6 @@
 /* encrypt.c
  *
- * Custom encryption 
+ * An encryption experiment in c
  * by Olivier Van Rompuy
  *
  * Per iteration/round the following is done to the data :
@@ -17,13 +17,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "sha512.h"
-
-#define BUFFER_SIZE 65536
-
-unsigned char key[1024]={0};
-unsigned char ttable[256][256]={0};
-unsigned char dtable[256][256]={0};
-int rounds=4;
+#include "encrypt.h"
 
 void sha_key(unsigned char * src,unsigned char * tgt) {
  unsigned char n=0;
@@ -36,7 +30,7 @@ void sha_key(unsigned char * src,unsigned char * tgt) {
 
 //We explode the keystring into a 1024byte key
 //Then we obscure it with sha512
-int buildkey(unsigned char * keystring) {
+int buildkey(crypttale *ct,unsigned char * keystring) {
  int se=strnlen(keystring,1024),n=0;
  int sp1=0;
  int cval;
@@ -57,11 +51,11 @@ int buildkey(unsigned char * keystring) {
   sp1=(sp1+1)%se;
   kp++;
  }
- sha_key(explode,key);
+ sha_key(explode,ct->key);
  return 0;
 }
 
-unsigned char tt_findchar(unsigned char input, int *table) {
+unsigned char tt_findchar(crypttale *ct,unsigned char input, int *table) {
  unsigned char found=1;
  unsigned char curr;
  int n;
@@ -77,40 +71,62 @@ unsigned char tt_findchar(unsigned char input, int *table) {
 }
 
 //Build the translation tables for byte substitution
-void buildtrans() {
+void buildtrans(crypttale *ct) {
  int n,m,kp=0;
  int ctable[256];
  unsigned char cval,curr,fval;
- cval=(key[1023]+key[0]-127);
+ cval=(ct->key[1023]+ct->key[0]-127);
  for(n=0;n<256;n++) {
   for(m=0;m<256;m++) {ctable[m]=-1;}
   for(m=0;m<256;m++) {
-   curr=key[kp];
+   curr=ct->key[kp];
    cval=((n>>8)+(n&255)^((n&1)?(cval+curr+1)&255:(cval-curr-127)))&255;
-   fval=tt_findchar(cval,ctable);
-   ttable[n][m]=fval;
-   dtable[n][fval]=m;
-   ctable[m]=ttable[n][m];
+   fval=tt_findchar(ct,cval,ctable);
+   ct->ttable[n][m]=fval;
+   ct->dtable[n][fval]=m;
+   ctable[m]=ct->ttable[n][m];
    kp=(kp+1)&1023;
   }
  }
 }
 
-//Inverted XOR
-int invertxor(unsigned char * string, int se) {
+//XOR
+int xor(crypttale *ct,unsigned char * string, int se) {
  int sp=0,kp=0;
  unsigned char * spp=string;
  uint64_t * sp64=(uint64_t *)spp;
 
  for(;sp<se-8;sp+=8) {
-  *sp64=*sp64^*(uint64_t *)(key+kp)^0xffffffffffffffff;
+  *sp64=*sp64^*(uint64_t *)(ct->key+kp);
   sp64++;
   kp=(kp+8)&1023;
  }
  spp=(unsigned char *)sp64;
 
  for(;sp<se;sp++) {
-  *spp=*spp^*(key+kp)^0xff;
+  *spp=*spp^*(ct->key+kp);
+  kp=(kp+1)&1023;
+  spp++;
+ }
+
+ return 0;
+}
+
+//Inverted XOR
+int invertxor(crypttale *ct,unsigned char * string, int se) {
+ int sp=0,kp=0;
+ unsigned char * spp=string;
+ uint64_t * sp64=(uint64_t *)spp;
+
+ for(;sp<se-8;sp+=8) {
+  *sp64=*sp64^*(uint64_t *)(ct->key+kp)^0xffffffffffffffff;
+  sp64++;
+  kp=(kp+8)&1023;
+ }
+ spp=(unsigned char *)sp64;
+
+ for(;sp<se;sp++) {
+  *spp=*spp^*(ct->key+kp)^0xff;
   kp=(kp+1)&1023;
   spp++;
  }
@@ -119,9 +135,9 @@ int invertxor(unsigned char * string, int se) {
 }
 
 //Byte substitution forward
-void translate_fw(unsigned char * str,int len,unsigned char phase) {
+void translate_fw(crypttale *ct,unsigned char * str,int len,unsigned char phase) {
  int n=0;
- unsigned char * tt=ttable[phase];
+ unsigned char * tt=ct->ttable[phase];
  unsigned char * sp=str;
  for(;n<len;n++) {
   *sp=tt[*sp];
@@ -130,9 +146,9 @@ void translate_fw(unsigned char * str,int len,unsigned char phase) {
 }
 
 //Byte substitution backward
-void translate_bw(unsigned char * str,int len,unsigned char phase) {
+void translate_bw(crypttale *ct,unsigned char * str,int len,unsigned char phase) {
  int n=0;
- unsigned char * dt=dtable[phase];
+ unsigned char * dt=ct->dtable[phase];
  unsigned char * sp=str;
  for(;n<len;n++) {
   *sp=dt[*sp];
@@ -141,12 +157,12 @@ void translate_bw(unsigned char * str,int len,unsigned char phase) {
 }
 
 //Bit rotation forward
-void obscure_fw(unsigned char * str,int len,unsigned char phase) {
+void obscure_fw(crypttale *ct,unsigned char * str,int len,unsigned char phase) {
  int sc,n,max=len-8;
  uint64_t * bp;
- unsigned char * tt=ttable[phase];
+ unsigned char * tt=ct->ttable[phase];
  unsigned char offset=tt[127]&7;
- if (len<8) return;
+ if (len<9) return;
  for(sc=offset;sc<max;sc+=8) {
     bp=(uint64_t *)(str+sc);
     *bp=((*bp)<<(tt[sc>>4]&63))|((*bp)>>(64-(tt[sc>>4]&63)));
@@ -158,12 +174,12 @@ void obscure_fw(unsigned char * str,int len,unsigned char phase) {
 }
 
 //Bit rotation backward
-void obscure_bw(unsigned char * str,int len,unsigned char phase) {
+void obscure_bw(crypttale *ct,unsigned char * str,int len,unsigned char phase) {
  int sc,n,max=len-8;
  uint64_t * bp;
- unsigned char * tt=ttable[phase];
+ unsigned char * tt=ct->ttable[phase];
  unsigned char offset=tt[127]&7;
- if (len<8) return;
+ if (len<9) return;
  bp=(uint64_t *)(str+(max-1));
  *bp=((*bp)>>(tt[1]&63))|((*bp)<<(64-(tt[1]&63)));
  bp=(uint64_t *)(str);
@@ -175,32 +191,34 @@ void obscure_bw(unsigned char * str,int len,unsigned char phase) {
 }
 
 //Set up encryption
-int init_encrypt(unsigned char * keystr,int nr_rounds) {
- rounds=nr_rounds;
- buildkey(keystr);
- buildtrans();
+int init_encrypt(crypttale *ct,unsigned char * keystr,int nr_rounds) {
+ ct->rounds=nr_rounds;
+ buildkey(ct,keystr);
+ buildtrans(ct);
 }
 
 //Encrypt a buffer of n bytes
-int encrypt_data(unsigned char * buffer,int len) {
+int encrypt_data(crypttale *ct,unsigned char * buffer,int len) {
  int n=0;
- invertxor(buffer,len);
- for(;n<rounds;n++) {
-  translate_fw(buffer,len,key[n]);
-  obscure_fw(buffer,len,key[n]);
-  invertxor(buffer,len);
-  obscure_bw(buffer,len,key[(n+512)&1023]);
+ invertxor(ct,buffer,len);
+ for(;n<ct->rounds;n++) {
+  translate_fw(ct,buffer,len,ct->key[n]);
+  obscure_fw(ct,buffer,len,ct->key[n]);
+  invertxor(ct,buffer,len);
+  //xor(buffer,len);
+  obscure_bw(ct,buffer,len,ct->key[(n+512)&1023]);
  }
 }
 
 //Decrypt a buffer of n bytes
-int decrypt_data(unsigned char * buffer,int len) {
- int n=rounds-1;
+int decrypt_data(crypttale *ct,unsigned char * buffer,int len) {
+ int n=ct->rounds-1;
  for(;n>=0;n--) {
-  obscure_fw(buffer,len,key[(n+512)&1023]);
-  invertxor(buffer,len);
-  obscure_bw(buffer,len,key[n]);
-  translate_bw(buffer,len,key[n]);
+  obscure_fw(ct,buffer,len,ct->key[(n+512)&1023]);
+  invertxor(ct,buffer,len);
+  //xor(buffer,len);
+  obscure_bw(ct,buffer,len,ct->key[n]);
+  translate_bw(ct,buffer,len,ct->key[n]);
  }
- invertxor(buffer,len);
+ invertxor(ct,buffer,len);
 }

@@ -72,6 +72,7 @@ long int entropy_search(unsigned char * buff, unsigned char *keystr, unsigned ch
  int len,rp,rn,n,rr;
  long int offset=0,offok=-1;
  uint16_t *obscure;
+ crypttale ct;
  FILE *fp;
 
  if (fname==NULL) {
@@ -88,10 +89,10 @@ long int entropy_search(unsigned char * buff, unsigned char *keystr, unsigned ch
  offset+=BUFFER_SIZE;
  memcpy(buff2,buff1,BUFFER_SIZE);
  while (rr>0) {
-  init_encrypt(keystr,rounds);
-  decrypt_data(buff2,BUFFER_SIZE);
-  init_encrypt(pwd,rounds);
-  decrypt_data(buff2,BUFFER_SIZE);
+  init_encrypt(&ct,keystr,rounds);
+  decrypt_data(&ct,buff2,BUFFER_SIZE);
+  init_encrypt(&ct,pwd,rounds);
+  decrypt_data(&ct,buff2,BUFFER_SIZE);
   SHA512(buff2,PAYLOAD_SIZE,cmp);
   if (memcmp(cmp,digest2,64)==0)
   {
@@ -118,6 +119,7 @@ long int entropy_append(unsigned char * buff, unsigned char *keystr, unsigned ch
  int rp,rn,n,len;
  uint16_t *obscure;
  long int offset=0;
+ crypttale ct;
  FILE *fp;
 
  if (fname==NULL) {
@@ -138,10 +140,10 @@ long int entropy_append(unsigned char * buff, unsigned char *keystr, unsigned ch
  obp=buff1+*obscure;
  strncpy(obp,buff,len+1);
  SHA512(buff1,PAYLOAD_SIZE,digest1);
- init_encrypt(pwd,rounds);
- encrypt_data(buff1,BUFFER_SIZE);
- init_encrypt(keystr,rounds);
- encrypt_data(buff1,BUFFER_SIZE);
+ init_encrypt(&ct,pwd,rounds);
+ encrypt_data(&ct,buff1,BUFFER_SIZE);
+ init_encrypt(&ct,keystr,rounds);
+ encrypt_data(&ct,buff1,BUFFER_SIZE);
  fwrite(buff1,1,BUFFER_SIZE,fp);
  offset+=BUFFER_SIZE;
 
@@ -157,6 +159,7 @@ long int entropy_replace(unsigned char * buff, unsigned char *keystr, unsigned c
  unsigned char * digest1 = buff1+PAYLOAD_SIZE;
  uint16_t *obscure;
  int rp,rn,n,len;
+ crypttale ct;
  FILE *fp;
 
  if (fname==NULL) {
@@ -181,10 +184,10 @@ long int entropy_replace(unsigned char * buff, unsigned char *keystr, unsigned c
  obp=buff1+*obscure;
  strncpy(obp,buff,len+1);
  SHA512(buff1,PAYLOAD_SIZE,digest1);
- init_encrypt(pwd,rounds);
- encrypt_data(buff1,BUFFER_SIZE);
- init_encrypt(keystr,rounds);
- encrypt_data(buff1,BUFFER_SIZE);
+ init_encrypt(&ct,pwd,rounds);
+ encrypt_data(&ct,buff1,BUFFER_SIZE);
+ init_encrypt(&ct,keystr,rounds);
+ encrypt_data(&ct,buff1,BUFFER_SIZE);
  fwrite(buff1,1,BUFFER_SIZE,fp);
  offset+=BUFFER_SIZE;
  
