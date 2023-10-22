@@ -55,7 +55,7 @@ int buildkey(crypttale *ct,unsigned char * keystring) {
  return 0;
 }
 
-unsigned char tt_findchar(crypttale *ct,unsigned char input, int *table) {
+unsigned char tt_findchar(unsigned char input, int *table) {
  unsigned char found=1;
  unsigned char curr;
  int n;
@@ -81,7 +81,7 @@ void buildtrans(crypttale *ct) {
   for(m=0;m<256;m++) {
    curr=ct->key[kp];
    cval=((n>>8)+(n&255)^((n&1)?(cval+curr+1)&255:(cval-curr-127)))&255;
-   fval=tt_findchar(ct,cval,ctable);
+   fval=tt_findchar(cval,ctable);
    ct->ttable[n][m]=fval;
    ct->dtable[n][fval]=m;
    ctable[m]=ct->ttable[n][m];
@@ -192,6 +192,12 @@ void obscure_bw(crypttale *ct,unsigned char * str,int len,unsigned char phase) {
 
 //Set up encryption
 int init_encrypt(crypttale *ct,unsigned char * keystr,int nr_rounds) {
+ unsigned int n=0;
+ memset(ct->key,0,1024);
+ for (;n<256;n++) {
+   memset(ct->ttable[0],0,256);
+   memset(ct->dtable[0],0,256);
+ }
  ct->rounds=nr_rounds;
  buildkey(ct,keystr);
  buildtrans(ct);
@@ -205,7 +211,6 @@ int encrypt_data(crypttale *ct,unsigned char * buffer,int len) {
   translate_fw(ct,buffer,len,ct->key[n]);
   obscure_fw(ct,buffer,len,ct->key[n]);
   invertxor(ct,buffer,len);
-  //xor(buffer,len);
   obscure_bw(ct,buffer,len,ct->key[(n+512)&1023]);
  }
 }
@@ -216,7 +221,6 @@ int decrypt_data(crypttale *ct,unsigned char * buffer,int len) {
  for(;n>=0;n--) {
   obscure_fw(ct,buffer,len,ct->key[(n+512)&1023]);
   invertxor(ct,buffer,len);
-  //xor(buffer,len);
   obscure_bw(ct,buffer,len,ct->key[n]);
   translate_bw(ct,buffer,len,ct->key[n]);
  }
