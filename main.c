@@ -55,7 +55,7 @@ int main(int argc, char **argv)
  int len,rc;
  DIR *dp;
  struct dirent *entry;
- snprintf(basepath,256,"%s/.entropy", getpwuid(getuid())->pw_dir);
+ snprintf(basepath,256,"%s/.pwvlt", getpwuid(getuid())->pw_dir);
  snprintf(filepath,256,"%s/.default.entropy",basepath); 
 
  //Option handling
