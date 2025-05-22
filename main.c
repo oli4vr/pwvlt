@@ -168,9 +168,9 @@ int main(int argc, char **argv)
       if (syscmd) {
        rc=system(payload);
       } else {
-       if (distype==0) fprintf(stdout,"Copy/Paste between >>>%c[8m",27);
-       fwrite(payload,1,strnlen(payload,PAYLOAD_SIZE),stdout);
-       if (distype==0) fprintf(stdout,"%c[m<<<",27);
+       if (distype==0) fprintf(stderr,"Copy/Paste between >>>%c[8m",27);
+       fwrite(payload,1,strnlen(payload,PAYLOAD_SIZE),stderr);
+       if (distype==0) fprintf(stderr,"%c[m<<<",27);
       }
       }
      break;
